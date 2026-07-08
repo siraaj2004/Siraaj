@@ -1,8 +1,9 @@
 import os
+from dotenv import load_dotenv
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+load_dotenv()
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+YOUTUBE_RSS_URL = os.getenv("YOUTUBE_RSS_URL")
