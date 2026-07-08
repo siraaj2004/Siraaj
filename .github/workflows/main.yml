@@ -30,8 +30,8 @@ jobs:
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          EMAIL: ${{ secrets.EMAIL }}
+          EMAIL_USER: ${{ secrets.EMAIL }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
-          RECIPIENT: ${{ secrets.RECIPIENT }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT }}
         run: |
           python src/app.py
