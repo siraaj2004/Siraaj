@@ -1,37 +1,42 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
 # ==========================
 # API Keys
 # ==========================
+
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 # ==========================
-# Email Configuration
+# Email
 # ==========================
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 
 # ==========================
-# Validate Required Variables
+# YouTube Settings
 # ==========================
-required_vars = {
-    "YOUTUBE_API_KEY": YOUTUBE_API_KEY,
-    "GEMINI_API_KEY": GEMINI_API_KEY,
-    "EMAIL_USER": EMAIL_USER,
-    "EMAIL_PASSWORD": EMAIL_PASSWORD,
-    "RECIPIENT_EMAIL": RECIPIENT_EMAIL,
-}
 
-missing = [key for key, value in required_vars.items() if not value]
+REGION_CODE = "IN"
+MAX_RESULTS = 20
 
-if missing:
-    raise ValueError(
-        "Missing environment variables in .env:\n"
-        + "\n".join(f"- {var}" for var in missing)
-    )
+# ==========================
+# Validation
+# ==========================
+
+if not YOUTUBE_API_KEY:
+    raise ValueError("YOUTUBE_API_KEY not found in .env")
+
+if not OPENROUTER_API_KEY:
+    raise ValueError("OPENROUTER_API_KEY not found in .env")
+
+if not RESEND_API_KEY:
+    raise ValueError("RESEND_API_KEY not found in .env")
+
+if not RECIPIENT_EMAIL:
+    raise ValueError("RECIPIENT_EMAIL not found in .env")
