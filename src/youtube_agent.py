@@ -1,99 +1,67 @@
 import os
-from dotenv import load_dotenv
 from googleapiclient.discovery import build
+from dotenv import load_dotenv
 
 load_dotenv()
 
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-if not YOUTUBE_API_KEY:
-    raise ValueError("YOUTUBE_API_KEY not found in .env")
+youtube = build(
+    "youtube",
+    "v3",
+    developerKey=API_KEY
+)
 
-youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
-
-def get_latest_videos(
-    query="Telugu movies",
-    max_results=10,
-    region_code="IN"
+def get_trending_videos(
+    region_code="IN",
+    max_results=20,
 ):
     """
-    Search latest YouTube videos by keyword.
-    No RSS.
+    Returns the current trending YouTube videos.
     No Channel ID.
+    No specific genre.
     """
 
-    search_response = youtube.search().list(
-        part="snippet",
-        q=query,
-        type="video",
-        order="date",
+    response = youtube.videos().list(
+        part="snippet,statistics",
+        chart="mostPopular",
         regionCode=region_code,
-        maxResults=max_results
+        maxResults=max_results,
     ).execute()
 
     videos = []
 
-    video_ids = [
-        item["id"]["videoId"]
-        for item in search_response["items"]
-    ]
+    for item in response.get("items", []):
+        snippet = item["snippet"]
+        stats = item.get("statistics", {})
 
-    if not video_ids:
-        return []
-
-    stats_response = youtube.videos().list(
-        part="statistics",
-        id=",".join(video_ids)
-    ).execute()
-
-    stats = {
-        item["id"]: item["statistics"]
-        for item in stats_response["items"]
-    }
-
-    for item in search_response["items"]:
-        video_id = item["id"]["videoId"]
-
-        video = {
-            "title": item["snippet"]["title"],
-            "channel": item["snippet"]["channelTitle"],
-            "published": item["snippet"]["publishedAt"],
-            "video_url": f"https://www.youtube.com/watch?v={video_id}",
-            "views": stats.get(video_id, {}).get("viewCount", "0"),
-            "likes": stats.get(video_id, {}).get("likeCount", "0"),
-            "comments": stats.get(video_id, {}).get("commentCount", "0")
-        }
-
-        videos.append(video)
+        videos.append({
+            "title": snippet["title"],
+            "channel": snippet["channelTitle"],
+            "published_at": snippet["publishedAt"],
+            "views": int(stats.get("viewCount", 0)),
+            "likes": int(stats.get("likeCount", 0)),
+            "comments": int(stats.get("commentCount", 0)),
+            "video_url": f"https://www.youtube.com/watch?v={item['id']}",
+            "thumbnail": snippet["thumbnails"]["high"]["url"],
+        })
 
     return videos
 
 
 if __name__ == "__main__":
+    videos = get_trending_videos()
 
-    keywords = [
-        "Telugu movies",
-        "Telugu thriller",
-        "Telugu comedy",
-        "AI",
-        "Technology"
-    ]
+    print("=" * 80)
+    print("🔥 Trending YouTube Videos")
+    print("=" * 80)
 
-    for keyword in keywords:
-
-        print("=" * 80)
-        print("Keyword:", keyword)
-        print("=" * 80)
-
-        videos = get_latest_videos(keyword)
-
-        for i, video in enumerate(videos, start=1):
-            print(f"{i}. {video['title']}")
-            print("Channel :", video["channel"])
-            print("Views   :", video["views"])
-            print("Likes   :", video["likes"])
-            print("Comments:", video["comments"])
-            print("Published:", video["published"])
-            print(video["video_url"])
-            print("-" * 80)
+    for i, video in enumerate(videos, start=1):
+        print(f"\n{i}. {video['title']}")
+        print(f"Channel   : {video['channel']}")
+        print(f"Views     : {video['views']:,}")
+        print(f"Likes     : {video['likes']:,}")
+        print(f"Comments  : {video['comments']:,}")
+        print(f"Published : {video['published_at']}")
+        print(f"Video     : {video['video_url']}")
