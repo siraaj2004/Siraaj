@@ -1,77 +1,54 @@
-import requests
-import feedparser
+import os
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
 
-from config import (
-    OPENROUTER_API_KEY,
-    RESEND_API_KEY,
-    RECIPIENT_EMAIL,
-    YOUTUBE_RSS_URL
-)
+# Load .env
+ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT_DIR / ".env")
 
-# Read RSS feed
-feed = feedparser.parse(YOUTUBE_RSS_URL)
+# Environment variables
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
 
-videos = []
 
-for entry in feed.entries[:10]:
-    videos.append(
-        f"Title: {entry.title}\n"
-        f"Link: {entry.link}\n"
-    )
-
-video_text = "\n\n".join(videos)
-
-prompt = f"""
-Analyze these YouTube videos.
-
-Give:
-1. Trending topics
-2. Video ideas
-3. Shorts ideas
-4. Viral title suggestions
-
-Videos:
-
-{video_text}
-"""
-
-# OpenRouter
-ai_response = requests.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    headers={
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    },
-    json={
-        "model": "openrouter/free",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+def check_env():
+    required = {
+        "OPENROUTER_API_KEY": OPENROUTER_API_KEY,
+        "RESEND_API_KEY": RESEND_API_KEY,
+        "YOUTUBE_API_KEY": YOUTUBE_API_KEY,
+        "RECIPIENT_EMAIL": RECIPIENT_EMAIL,
     }
-)
 
-analysis = ai_response.json()["choices"][0]["message"]["content"]
+    missing = [key for key, value in required.items() if not value]
 
-# Resend
-email_response = requests.post(
-    "https://api.resend.com/emails",
-    headers={
-        "Authorization": f"Bearer {RESEND_API_KEY}",
-        "Content-Type": "application/json"
-    },
-    json={
-        "from": "onboarding@resend.dev",
-        "to": [RECIPIENT_EMAIL],
-        "subject": "YouTube Trends & Ideas",
-        "html": f"""
-        <h1>YouTube Trends Report</h1>
-        <pre>{analysis}</pre>
-        """
-    }
-)
+    if missing:
+        print("❌ Missing environment variables:")
+        for item in missing:
+            print(f"   - {item}")
+        sys.exit(1)
 
-print("Email Status:", email_response.status_code)
-print(email_response.text)
+    print("✅ Environment variables loaded successfully.")
+
+
+def main():
+    check_env()
+
+    try:
+        from youtube_agent import run_agent
+    except ImportError as e:
+        print(f"❌ Import Error: {e}")
+        sys.exit(1)
+
+    try:
+        run_agent()
+        print("✅ Agent finished successfully.")
+    except Exception as e:
+        print(f"❌ Agent Error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
