@@ -1,15 +1,17 @@
 import os
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
-# Load environment variables
+# Load .env
 load_dotenv()
 
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 if not API_KEY:
-    raise ValueError("YOUTUBE_API_KEY not found in .env")
+    raise Exception("YOUTUBE_API_KEY not found")
 
+# Create YouTube client
 youtube = build(
     "youtube",
     "v3",
@@ -22,49 +24,60 @@ def get_trending_videos(region_code="IN", max_results=20):
     Fetch trending YouTube videos.
     """
 
-    response = youtube.videos().list(
-        part="snippet,statistics",
-        chart="mostPopular",
-        regionCode=region_code,
-        maxResults=max_results,
-    ).execute()
+    try:
+        request = youtube.videos().list(
+            part="snippet,statistics",
+            chart="mostPopular",
+            regionCode=region_code,
+            maxResults=max_results
+        )
 
-    videos = []
+        response = request.execute()
 
-    for item in response.get("items", []):
-        snippet = item["snippet"]
-        stats = item.get("statistics", {})
+        videos = []
 
-        videos.append({
-            "title": snippet["title"],
-            "channel": snippet["channelTitle"],
-            "published_at": snippet["publishedAt"],
-            "views": int(stats.get("viewCount", 0)),
-            "likes": int(stats.get("likeCount", 0)),
-            "comments": int(stats.get("commentCount", 0)),
-            "video_url": f"https://www.youtube.com/watch?v={item['id']}",
-            "thumbnail": snippet["thumbnails"]["high"]["url"],
-        })
+        for item in response.get("items", []):
+            snippet = item["snippet"]
+            stats = item.get("statistics", {})
 
-    return videos
+            videos.append({
+                "title": snippet.get("title", ""),
+                "channel": snippet.get("channelTitle", ""),
+                "published_at": snippet.get("publishedAt", ""),
+                "views": int(stats.get("viewCount", 0)),
+                "likes": int(stats.get("likeCount", 0)),
+                "comments": int(stats.get("commentCount", 0)),
+                "video_url": f"https://www.youtube.com/watch?v={item['id']}",
+                "thumbnail": snippet["thumbnails"]["high"]["url"]
+            })
+
+        return videos
+
+    except HttpError as e:
+        print("YouTube API Error:", e)
+        return []
+
+    except Exception as e:
+        print("Unexpected Error:", e)
+        return []
 
 
 def run_agent():
     """
-    Function called by app.py
+    Main function called by app.py
     """
 
     print("=" * 80)
-    print("🔥 Fetching Trending YouTube Videos...")
+    print("Fetching Trending YouTube Videos")
     print("=" * 80)
 
     videos = get_trending_videos()
 
     if not videos:
-        print("No trending videos found.")
+        print("No videos found.")
         return
 
-    for i, video in enumerate(videos, start=1):
+    for i, video in enumerate(videos, 1):
         print(f"\n{i}. {video['title']}")
         print(f"Channel   : {video['channel']}")
         print(f"Views     : {video['views']:,}")
