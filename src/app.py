@@ -11,7 +11,8 @@ load_dotenv(ROOT_DIR / ".env")
 def check_env():
     required = [
         "YOUTUBE_API_KEY",
-        "RECIPIENT_EMAIL"
+        "RECIPIENT_EMAIL",
+        "RESEND_API_KEY"
     ]
 
     missing = []
@@ -34,19 +35,39 @@ def main():
 
     try:
         import youtube_agent
+        from sender import send_email
     except Exception as e:
-        print(f"❌ Failed to import youtube_agent: {e}")
-        sys.exit(1)
-
-    if not hasattr(youtube_agent, "run_agent"):
-        print("❌ run_agent() function not found in youtube_agent.py")
-        print("Available functions:")
-        print(dir(youtube_agent))
+        print(f"❌ Import Error: {e}")
         sys.exit(1)
 
     try:
-        youtube_agent.run_agent()
-        print("✅ YouTube agent completed successfully.")
+        print("📺 Fetching YouTube trending videos...")
+
+        videos = youtube_agent.run_agent()
+
+        print(f"✅ Retrieved {len(videos)} videos.")
+
+        body = "🔥 YouTube Trending Videos\n\n"
+
+        for i, video in enumerate(videos, start=1):
+            body += (
+                f"{i}. {video['title']}\n"
+                f"Channel : {video['channel']}\n"
+                f"Views   : {video['views']:,}\n"
+                f"Likes   : {video['likes']:,}\n"
+                f"Comments: {video['comments']:,}\n"
+                f"URL     : {video['video_url']}\n\n"
+            )
+
+        print("📧 Sending email...")
+
+        send_email(
+            subject="🔥 YouTube Trending Videos",
+            body=body
+        )
+
+        print("✅ Workflow completed successfully.")
+
     except Exception as e:
         print(f"❌ Runtime Error: {e}")
         sys.exit(1)
